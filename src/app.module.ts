@@ -5,12 +5,14 @@ import { ConfigModule } from '@nestjs/config';
 import { DbModule } from './common/db/db.module';
 import { PostModule } from './modules/post/post.module';
 import { LikeModule } from './modules/like/like.module';
+import { CommentModule } from './modules/comment/comment.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
     PostModule,
     LikeModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,285 @@
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, FindOneOptions, Repository } from 'typeorm';
+import { Order } from 'src/common/enum/enum';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { Multer } from 'multer';
+import { validate as uuidValidate } from 'uuid';
+import { GetCommentParams } from './dto/getList-comment.dto';
+import { Comment } from '../../entities/comment.entity';
+import {
+  CheckCommentExistsRequest,
+  CheckCommentExistsResponse,
+  CreateCommentRequest,
+  DeleteCommentResponse,
+  GetCommentIdRequest,
+  PageMeta,
+  CommentResponse,
+  CommentsResponse,
+  UpdateCommentRequest,
+} from 'src/common/interface/comment.interface';
+import { RpcException } from '@nestjs/microservices';
+
+@Injectable()
+export class CommentService {
+  private readonly logger = new Logger(CommentService.name);
+  constructor(
+    @InjectRepository(Comment)
+    private readonly commentsRepository: Repository<Comment>,
+    private readonly entityManager: EntityManager,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
+
+  async getComments(params: GetCommentParams): Promise<CommentsResponse> {
+    const comments = this.commentsRepository
+      .createQueryBuilder('comment')
+      .select(['comment'])
+      .skip(params.skip)
+      .take(params.take)
+      .orderBy('comment.createdAt', Order.DESC);
+    if (params.search) {
+      comments.andWhere('comment.content ILIKE :comment', {
+        comment: `%${params.search}%`,
+      });
+    }
+    const [result, total] = await comments.getManyAndCount();
+    const data: CommentResponse[] = result.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      mediaPath: comment.mediaPath,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      createdBy: comment.createdBy || null,
+      updatedAt: comment.updatedAt ? comment.updatedAt.toISOString() : null,
+      updatedBy: comment.updatedBy || null,
+      deletedAt: comment.deletedAt ? comment.deletedAt.toISOString() : null,
+      deletedBy: comment.deletedBy || null,
+      postId: comment.postId,
+      userId: comment.userId,
+    }));
+
+    const meta: PageMeta = {
+      page: params.page,
+      take: params.take,
+      itemCount: total,
+      pageCount: Math.ceil(total / params.take),
+      hasPreviousPage: params.page > 1,
+      hasNextPage: params.page < Math.ceil(total / params.take),
+    };
+
+    return { data, meta, message: 'Success' };
+  }
+
+  async getCommentById(request: GetCommentIdRequest): Promise<CommentResponse> {
+    const comment = await this.commentsRepository
+      .createQueryBuilder('comment')
+      .select(['comment'])
+      .where('comment.id = :id', { id: request.id })
+      .getOne();
+
+    if (!comment) {
+      throw new NotFoundException(`User with ID ${request.id} not found`);
+    }
+
+    return {
+      id: comment.id,
+      content: comment.content,
+      mediaPath: comment.mediaPath,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      createdBy: comment.createdBy || '',
+      updatedAt: comment.updatedAt ? comment.updatedAt.toISOString() : null,
+      updatedBy: comment.updatedBy || '',
+      deletedAt: comment.deletedAt ? comment.deletedAt.toISOString() : null,
+      deletedBy: comment.deletedBy || '',
+      postId: comment.postId,
+      userId: comment.userId,
+    };
+  }
+
+  async create(
+    createCommentRequest: CreateCommentRequest,
+  ): Promise<CommentResponse> {
+    const { mediaPath } = createCommentRequest;
+    try {
+      const mediaUrls: string[] = [];
+      if (mediaPath && mediaPath.length > 0) {
+        this.logger.log('Uploading mediaPath to Cloudinary');
+        for (const buffer of mediaPath) {
+          const url = await this.uploadAndReturnUrl({
+            buffer,
+            mimetype: 'image/jpeg',
+          });
+          mediaUrls.push(url);
+        }
+      }
+
+      const comment = this.entityManager.create(Comment, {
+        ...createCommentRequest,
+        mediaPath: mediaUrls,
+      });
+
+      await this.entityManager.save(comment);
+
+      this.logger.log(`Comment created successfully: id: ${comment.id}`);
+
+      return {
+        id: comment.id,
+        content: comment.content,
+        mediaPath: comment.mediaPath,
+        createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+        createdBy: comment.createdBy || '',
+        updatedAt: comment.updatedAt ? comment.updatedAt.toISOString() : null,
+        updatedBy: comment.updatedBy || '',
+        deletedAt: comment.deletedAt ? comment.deletedAt.toISOString() : null,
+        deletedBy: comment.deletedBy || '',
+        postId: comment.postId,
+        userId: comment.userId,
+      };
+    } catch (error) {
+      this.logger.error(`Error in create: ${error.message}`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new RpcException(error.message);
+    }
+  }
+
+  async checkCommentExists(
+    data: CheckCommentExistsRequest,
+  ): Promise<CheckCommentExistsResponse> {
+    const comment = await this.commentsRepository.findOne({
+      where: { id: data.id },
+    });
+    return { exists: !!comment };
+  }
+
+  async update(
+    updateCommentRequest: UpdateCommentRequest,
+  ): Promise<CommentResponse> {
+    const { id, content, mediaPath } = updateCommentRequest;
+    this.logger.log(`Received update request for comment with ID: ${id}`);
+
+    try {
+      // Log input parameters
+      this.logger.log(
+        `Update request details: ${JSON.stringify(updateCommentRequest)}`,
+      );
+
+      const findOptions: FindOneOptions<Comment> = { where: { id } };
+      this.logger.log(`Finding comment with ID: ${id}`);
+      const comment = await this.commentsRepository.findOne(findOptions);
+
+      if (!comment) {
+        this.logger.warn(`Comment with ID: ${id} not found`);
+        throw new RpcException(`Comment with ID: ${id} not found`);
+      }
+      this.logger.log(`Comment found: ${JSON.stringify(comment)}`);
+
+      let mediaUrls: string[] = comment.mediaPath;
+
+      if (mediaPath && mediaPath.length > 0) {
+        this.logger.log(`Updating media paths for comment with ID: ${id}`);
+        await this.deleteOldMediaPath(comment);
+        mediaUrls = await Promise.all(
+          mediaPath.map(async (buffer, index) => {
+            this.logger.log(`Processing media path buffer ${index + 1}`);
+            if (!Buffer.isBuffer(buffer)) {
+              this.logger.error(
+                `Expected buffer to be a Buffer but got: ${typeof buffer}`,
+              );
+              throw new Error(
+                '"buf" argument must be a string or an instance of Buffer',
+              );
+            }
+            const url = await this.uploadAndReturnUrl({
+              buffer,
+              mimetype: 'image/jpeg',
+            });
+            this.logger.log(`Uploaded media and got URL: ${url}`);
+            return url;
+          }),
+        );
+      }
+
+      if (content !== undefined && content.trim() !== '') {
+        this.logger.log(`Updating content for comment with ID: ${id}`);
+        comment.content = content;
+      }
+
+      comment.mediaPath = mediaUrls;
+
+      this.logger.log(`Saving updated comment with ID: ${id}`);
+      await this.entityManager.save(comment);
+
+      const response: CommentResponse = {
+        id: comment.id,
+        content: comment.content,
+        mediaPath: comment.mediaPath,
+        createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+        createdBy: comment.createdBy || '',
+        updatedAt: comment.updatedAt ? comment.updatedAt.toISOString() : null,
+        updatedBy: comment.updatedBy || '',
+        deletedAt: comment.deletedAt ? comment.deletedAt.toISOString() : null,
+        deletedBy: comment.deletedBy || '',
+        postId: comment.postId,
+        userId: comment.userId,
+      };
+
+      this.logger.log(`Successfully updated comment with ID: ${id}`);
+      this.logger.log(`Response: ${JSON.stringify(response)}`);
+
+      return response;
+    } catch (error) {
+      this.logger.error(`Error in update: ${error.message}`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new RpcException(error.message);
+    }
+  }
+
+  async remove(id: string): Promise<DeleteCommentResponse> {
+    if (!uuidValidate(id)) {
+      throw new BadRequestException('Invalid UUID');
+    }
+
+    const comment = await this.commentsRepository
+      .createQueryBuilder('comment')
+      .where('comment.id = :id', { id })
+      .getOne();
+
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID ${id} not found`);
+    }
+
+    await this.commentsRepository.softDelete(id);
+    return { data: null, message: 'Comment deletion successful' };
+  }
+
+  //CLOUDINARY
+  async deleteOldMediaPath(comment: Comment): Promise<void> {
+    if (comment.mediaPath && comment.mediaPath.length > 0) {
+      await Promise.all(
+        comment.mediaPath.map(async (url) => {
+          const publicId = this.cloudinaryService.extractPublicIdFromUrl(url);
+          await this.cloudinaryService.deleteFile(publicId);
+        }),
+      );
+    }
+  }
+
+  async uploadAndReturnUrl(file: Multer.File): Promise<string> {
+    try {
+      const result = await this.cloudinaryService.uploadImageFile(file);
+      return result.secure_url;
+    } catch (error) {
+      this.logger.error('Error uploading image to Cloudinary:', error);
+      throw error;
+    }
+  }
+}
