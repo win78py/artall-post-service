@@ -162,35 +162,20 @@ export class CommentService {
     updateCommentRequest: UpdateCommentRequest,
   ): Promise<CommentResponse> {
     const { id, content, mediaPath } = updateCommentRequest;
-    this.logger.log(`Received update request for comment with ID: ${id}`);
 
     try {
-      // Log input parameters
-      this.logger.log(
-        `Update request details: ${JSON.stringify(updateCommentRequest)}`,
-      );
-
       const findOptions: FindOneOptions<Comment> = { where: { id } };
-      this.logger.log(`Finding comment with ID: ${id}`);
       const comment = await this.commentsRepository.findOne(findOptions);
-
-      if (!comment) {
-        this.logger.warn(`Comment with ID: ${id} not found`);
-        throw new RpcException(`Comment with ID: ${id} not found`);
-      }
-      this.logger.log(`Comment found: ${JSON.stringify(comment)}`);
 
       let mediaUrls: string[] = comment.mediaPath;
 
       if (mediaPath && mediaPath.length > 0) {
-        this.logger.log(`Updating media paths for comment with ID: ${id}`);
         await this.deleteOldMediaPath(comment);
         mediaUrls = await Promise.all(
-          mediaPath.map(async (buffer, index) => {
-            this.logger.log(`Processing media path buffer ${index + 1}`);
+          mediaPath.map(async (buffer) => {
             if (!Buffer.isBuffer(buffer)) {
               this.logger.error(
-                `Expected buffer to be a Buffer but got: ${typeof buffer}`,
+                'Expected buffer to be a Buffer but got: ${typeof buffer}',
               );
               throw new Error(
                 '"buf" argument must be a string or an instance of Buffer',
@@ -200,23 +185,20 @@ export class CommentService {
               buffer,
               mimetype: 'image/jpeg',
             });
-            this.logger.log(`Uploaded media and got URL: ${url}`);
             return url;
           }),
         );
       }
 
       if (content !== undefined && content.trim() !== '') {
-        this.logger.log(`Updating content for comment with ID: ${id}`);
         comment.content = content;
       }
 
       comment.mediaPath = mediaUrls;
 
-      this.logger.log(`Saving updated comment with ID: ${id}`);
       await this.entityManager.save(comment);
 
-      const response: CommentResponse = {
+      return {
         id: comment.id,
         content: comment.content,
         mediaPath: comment.mediaPath,
@@ -229,13 +211,8 @@ export class CommentService {
         postId: comment.postId,
         userId: comment.userId,
       };
-
-      this.logger.log(`Successfully updated comment with ID: ${id}`);
-      this.logger.log(`Response: ${JSON.stringify(response)}`);
-
-      return response;
     } catch (error) {
-      this.logger.error(`Error in update: ${error.message}`, error.stack);
+      this.logger.error('Error in update: ${error.message}', error.stack);
       if (error instanceof HttpException) {
         throw error;
       }
