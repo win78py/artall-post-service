@@ -8,8 +8,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { UserInfo } from './userInfo.entity';
-import { Like } from './like.entity';
 import { Post } from './post.entity';
+import { LikeComment } from './likeComment.entity';
 
 @Entity()
 export class Comment extends AbstractEntity {
@@ -36,11 +36,11 @@ export class Comment extends AbstractEntity {
   @JoinColumn({ name: 'userId', referencedColumnName: 'id' })
   user: UserInfo;
 
-  @OneToMany(() => Like, (like) => like.post, {
+  @OneToMany(() => LikeComment, (like) => like.comment, {
     cascade: true,
     onUpdate: 'CASCADE',
   })
-  likeList: Like[];
+  likeCommentList: LikeComment[];
 
   constructor(comment: Partial<Comment>) {
     super();

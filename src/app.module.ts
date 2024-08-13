@@ -6,6 +6,7 @@ import { DbModule } from './common/db/db.module';
 import { PostModule } from './modules/post/post.module';
 import { LikeModule } from './modules/like/like.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { LikeCommentModule } from './modules/likeComment/likeComment.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -13,6 +14,7 @@ import { CommentModule } from './modules/comment/comment.module';
     PostModule,
     LikeModule,
     CommentModule,
+    LikeCommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,7 +10,7 @@ import {
   DeleteLikeResponse,
   GetLikeIdRequest,
   LikeResponse,
-  ManyLikeResponse,
+  LikesResponse,
 } from 'src/common/interface/like.interface';
 
 @Controller('like')
@@ -18,8 +18,8 @@ export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
   //GET ALL LIKE
-  @GrpcMethod('PostService', 'GetAllLike')
-  async findAll(data: GetLikeParams): Promise<ManyLikeResponse> {
+  @GrpcMethod('PostService', 'GetAllLikes')
+  async findAll(data: GetLikeParams): Promise<LikesResponse> {
     return this.likeService.getLike(data);
   }
 
