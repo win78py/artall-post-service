@@ -10,7 +10,7 @@ import {
   CreateLikeRequest,
   LikeResponse,
   GetLikeIdRequest,
-  ManyLikeResponse,
+  LikesResponse,
   PageMeta,
 } from 'src/common/interface/like.interface';
 import { GetLikeParams } from './dto/getList-like.dto';
@@ -23,7 +23,7 @@ export class LikeService {
     private readonly entityManager: EntityManager,
   ) {}
 
-  async getLike(params: GetLikeParams): Promise<ManyLikeResponse> {
+  async getLike(params: GetLikeParams): Promise<LikesResponse> {
     const like = this.likeRepository
       .createQueryBuilder('like')
       .select(['like'])
