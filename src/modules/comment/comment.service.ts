@@ -25,6 +25,7 @@ import {
   UpdateCommentRequest,
 } from 'src/common/interface/comment.interface';
 import { RpcException } from '@nestjs/microservices';
+import { LikeComment } from '../../entities/likeComment.entity';
 
 @Injectable()
 export class CommentService {
@@ -225,14 +226,12 @@ export class CommentService {
       throw new BadRequestException('Invalid UUID');
     }
 
-    const comment = await this.commentsRepository
-      .createQueryBuilder('comment')
-      .where('comment.id = :id', { id })
-      .getOne();
-
-    if (!comment) {
-      throw new NotFoundException(`Comment with ID ${id} not found`);
-    }
+    await this.entityManager.transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager.softDelete(LikeComment, {
+        commentId: id,
+      });
+      await transactionalEntityManager.softDelete(Comment, id);
+    });
 
     await this.commentsRepository.softDelete(id);
     return { data: null, message: 'Comment deletion successful' };

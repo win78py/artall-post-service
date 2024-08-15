@@ -6,13 +6,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, FindOneOptions, Repository } from 'typeorm';
+import { EntityManager, FindOneOptions, In, Repository } from 'typeorm';
 import { Order } from 'src/common/enum/enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Multer } from 'multer';
 import { validate as uuidValidate } from 'uuid';
 import { GetPostParams } from './dto/getList-post.dto';
 import { Post } from '../../entities/post.entity';
+import { Comment } from '../../entities/comment.entity';
+import { Like } from '../../entities/like.entity';
+import { LikeComment } from '../../entities/likeComment.entity';
 import {
   CheckPostExistsRequest,
   CheckPostExistsResponse,
@@ -217,16 +220,23 @@ export class PostService {
       throw new BadRequestException('Invalid UUID');
     }
 
-    const post = await this.postsRepository
-      .createQueryBuilder('post')
-      .where('post.id = :id', { id })
-      .getOne();
+    await this.entityManager.transaction(async (transactionalEntityManager) => {
+      const comments = await transactionalEntityManager.find(Comment, {
+        where: { postId: id },
+      });
+      const commentIds = comments.map((comment) => comment.id);
+      if (commentIds.length > 0) {
+        await transactionalEntityManager.softDelete(LikeComment, {
+          comment: { id: In(commentIds) },
+        });
+        await transactionalEntityManager.softDelete(Comment, {
+          id: In(commentIds),
+        });
+      }
+      await transactionalEntityManager.softDelete(Like, { postId: id });
+      await transactionalEntityManager.softDelete(Post, id);
+    });
 
-    if (!post) {
-      throw new NotFoundException(`Post with ID ${id} not found`);
-    }
-
-    await this.postsRepository.softDelete(id);
     return { data: null, message: 'Post deletion successful' };
   }
 
