@@ -4,6 +4,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from 'src/common/enum/enum';
 import { validate as uuidValidate } from 'uuid';
+import { GetLikeCommentParams } from './dto/getList-likeComment.dto';
 import {
   CheckLikeCommentExistsRequest,
   CheckLikeCommentExistsResponse,
@@ -13,7 +14,6 @@ import {
   LikesCommentResponse,
   PageMeta,
 } from '../../common/interface/likeComment.interface';
-import { GetLikeCommentParams } from './dto/getList-likeComment.dto';
 
 @Injectable()
 export class LikeCommentService {
