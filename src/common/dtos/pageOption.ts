@@ -6,6 +6,9 @@ export class PageOptionsDto {
   @IsString()
   search?: string = '';
 
+  @IsString()
+  content?: string = '';
+
   @IsEnum(Order)
   @IsOptional()
   order?: Order = Order.DESC;
