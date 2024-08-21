@@ -9,6 +9,7 @@ import {
   DeletePostRequest,
   DeletePostResponse,
   GetPostIdRequest,
+  PostInfoResponse,
   PostResponse,
   PostsResponse,
   UpdatePostRequest,
@@ -26,7 +27,7 @@ export class PostController {
 
   //GET POST BY ID
   @GrpcMethod('PostService', 'GetPostId')
-  async findOneById(data: GetPostIdRequest): Promise<PostResponse> {
+  async findOneById(data: GetPostIdRequest): Promise<PostInfoResponse> {
     return this.postService.getPostById(data);
   }
 

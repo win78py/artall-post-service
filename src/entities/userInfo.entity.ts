@@ -1,9 +1,16 @@
 import { AbstractEntity } from '../common/entities/abstract.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Follow } from './follow.entity';
 import { Post } from './post.entity';
 import { Like } from './like.entity';
 import { Comment } from './comment.entity';
+import { UserProfile } from './userProfile.entity';
 
 @Entity()
 export class UserInfo extends AbstractEntity {
@@ -16,6 +23,10 @@ export class UserInfo extends AbstractEntity {
   @Column({ nullable: true })
   profilePicture: string =
     'https://res.cloudinary.com/dnjkwuc7p/image/upload/v1712043752/avatar/default_avatar.png';
+
+  // User profile relationship
+  @OneToOne(() => UserProfile, (userProfile) => userProfile.userInfo)
+  userProfile: UserProfile;
 
   // Follow relationship
   @OneToMany(() => Follow, (follow) => follow.follower, {

@@ -23,6 +23,7 @@ import {
   DeletePostResponse,
   GetPostIdRequest,
   PageMeta,
+  PostInfoResponse,
   PostResponse,
   PostsResponse,
   UpdatePostRequest,
@@ -42,17 +43,17 @@ export class PostService {
   async getPosts(params: GetPostParams): Promise<PostsResponse> {
     const posts = this.postsRepository
       .createQueryBuilder('post')
-      .select(['post'])
+      .leftJoinAndSelect('post.userInfo', 'userInfo')
       .skip(params.skip)
       .take(params.take)
       .orderBy('post.createdAt', Order.DESC);
-    if (params.search) {
+    if (params.content) {
       posts.andWhere('post.content ILIKE :post', {
-        post: `%${params.search}%`,
+        post: `%${params.content}%`,
       });
     }
     const [result, total] = await posts.getManyAndCount();
-    const data: PostResponse[] = result.map((post) => ({
+    const data: PostInfoResponse[] = result.map((post) => ({
       id: post.id,
       content: post.content,
       mediaPath: post.mediaPath,
@@ -63,6 +64,11 @@ export class PostService {
       deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
       deletedBy: post.deletedBy || null,
       userId: post.userId,
+      userInfo: {
+        id: post.userInfo.id,
+        username: post.userInfo.username,
+        profilePicture: post.userInfo.profilePicture,
+      },
     }));
 
     const meta: PageMeta = {
@@ -77,7 +83,7 @@ export class PostService {
     return { data, meta, message: 'Success' };
   }
 
-  async getPostById(request: GetPostIdRequest): Promise<PostResponse> {
+  async getPostById(request: GetPostIdRequest): Promise<PostInfoResponse> {
     const post = await this.postsRepository
       .createQueryBuilder('post')
       .select(['post'])
@@ -99,6 +105,11 @@ export class PostService {
       deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
       deletedBy: post.deletedBy || '',
       userId: post.userId,
+      userInfo: {
+        id: post.userInfo.id,
+        username: post.userInfo.username,
+        profilePicture: post.userInfo.profilePicture,
+      },
     };
   }
 
