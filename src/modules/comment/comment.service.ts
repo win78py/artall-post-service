@@ -23,6 +23,7 @@ import {
   CommentResponse,
   CommentsResponse,
   UpdateCommentRequest,
+  CommentInfoResponse,
 } from 'src/common/interface/comment.interface';
 import { RpcException } from '@nestjs/microservices';
 import { LikeComment } from '../../entities/likeComment.entity';
@@ -40,17 +41,17 @@ export class CommentService {
   async getComments(params: GetCommentParams): Promise<CommentsResponse> {
     const comments = this.commentsRepository
       .createQueryBuilder('comment')
-      .select(['comment'])
+      .leftJoinAndSelect('comment.user', 'user')
       .skip(params.skip)
       .take(params.take)
       .orderBy('comment.createdAt', Order.DESC);
-    if (params.search) {
-      comments.andWhere('comment.content ILIKE :comment', {
-        comment: `%${params.search}%`,
+    if (params.content) {
+      comments.andWhere('comment.content ILIKE :content', {
+        content: `%${params.content}%`,
       });
     }
     const [result, total] = await comments.getManyAndCount();
-    const data: CommentResponse[] = result.map((comment) => ({
+    const data: CommentInfoResponse[] = result.map((comment) => ({
       id: comment.id,
       content: comment.content,
       mediaPath: comment.mediaPath,
@@ -62,6 +63,11 @@ export class CommentService {
       deletedBy: comment.deletedBy || null,
       postId: comment.postId,
       userId: comment.userId,
+      user: {
+        id: comment.user.id,
+        username: comment.user.username,
+        profilePicture: comment.user.profilePicture,
+      },
     }));
 
     const meta: PageMeta = {

@@ -1,9 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Like } from 'src/entities/like.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from 'src/common/enum/enum';
-import { validate as uuidValidate } from 'uuid';
 import {
   CheckLikeExistsRequest,
   CheckLikeExistsResponse,
@@ -12,8 +11,9 @@ import {
   GetLikeIdRequest,
   LikesResponse,
   PageMeta,
+  GetAllLikesRequest,
+  ToggleLikeResponse,
 } from 'src/common/interface/like.interface';
-import { GetLikeParams } from './dto/getList-like.dto';
 
 @Injectable()
 export class LikeService {
@@ -23,16 +23,16 @@ export class LikeService {
     private readonly entityManager: EntityManager,
   ) {}
 
-  async getLike(params: GetLikeParams): Promise<LikesResponse> {
+  async getLike(params: GetAllLikesRequest): Promise<LikesResponse> {
     const like = this.likeRepository
       .createQueryBuilder('like')
       .select(['like'])
       .skip(params.skip)
       .take(params.take)
       .orderBy('like.createdAt', Order.DESC);
-    if (params.search) {
-      like.andWhere('like.postId ILIKE :postId', {
-        like: `%${params.search}%`,
+    if (params.post) {
+      like.andWhere('like.postId = :postId', {
+        postId: params.post,
       });
     }
     const [result, total] = await like.getManyAndCount();
@@ -80,12 +80,8 @@ export class LikeService {
   }
 
   async create(data: CreateLikeRequest): Promise<LikeResponse> {
-    const like = this.likeRepository.create({
-      ...data,
-    });
-
+    const like = this.likeRepository.create(data);
     await this.likeRepository.save(like);
-
     return {
       id: like.id,
       postId: like.postId,
@@ -99,24 +95,37 @@ export class LikeService {
     };
   }
 
+  async remove(id: string): Promise<void> {
+    await this.likeRepository.delete(id);
+  }
+
   async checkLikeExists(
     data: CheckLikeExistsRequest,
   ): Promise<CheckLikeExistsResponse> {
-    const like = await this.likeRepository.findOne({
-      where: { id: data.id },
-    });
+    const like = await this.likeRepository.findOne({ where: { id: data.id } });
     return { exists: !!like };
   }
 
-  async remove(id: string) {
-    if (!uuidValidate(id)) {
-      throw new BadRequestException('Invalid UUID');
+  async toggleLike(
+    postId: string,
+    userId: string,
+  ): Promise<ToggleLikeResponse> {
+    const existingLike = await this.likeRepository.findOne({
+      where: { postId, userId },
+    });
+
+    if (existingLike) {
+      await this.remove(existingLike.id);
+      return {
+        data: null,
+        message: 'Like removed',
+      };
+    } else {
+      const like = await this.create({ postId, userId });
+      return {
+        data: like,
+        message: 'Like added',
+      };
     }
-    await this.likeRepository
-      .createQueryBuilder('like')
-      .where('like.id = :id', { id })
-      .getOne();
-    await this.likeRepository.softDelete(id);
-    return { data: null, message: 'Like deletion successful' };
   }
 }
