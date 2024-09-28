@@ -1,4 +1,10 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import {
   GenderEnum,
   RoleEnum,
@@ -18,7 +24,7 @@ export class UserProfile extends AbstractEntity {
   @Column({ nullable: true })
   fullName: string;
 
-  @Column()
+  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: true })
@@ -46,7 +52,7 @@ export class UserProfile extends AbstractEntity {
   @Column({ nullable: true })
   socialLinks: string;
 
-  @Column('timestamp')
+  @Column('timestamp', { nullable: true })
   lastLogin: Date;
 
   @Column({
@@ -66,10 +72,11 @@ export class UserProfile extends AbstractEntity {
   @Column('boolean')
   isActive: boolean;
 
-  @Column({ nullable: true, default: null })
+  @Column({ nullable: true })
   userInfoId: string;
 
   @OneToOne(() => UserInfo, (userInfo) => userInfo.userProfile)
+  @JoinColumn({ name: 'userInfoId' })
   userInfo: UserInfo;
 
   constructor(userProfile: Partial<UserProfile>) {

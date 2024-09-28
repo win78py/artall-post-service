@@ -11,6 +11,7 @@ import { Post } from './post.entity';
 import { Like } from './like.entity';
 import { Comment } from './comment.entity';
 import { UserProfile } from './userProfile.entity';
+import { BlockList } from './blockList.entity';
 
 @Entity()
 export class UserInfo extends AbstractEntity {
@@ -40,6 +41,19 @@ export class UserInfo extends AbstractEntity {
     onUpdate: 'CASCADE',
   })
   following: Follow[];
+
+  // BlockList relationship
+  @OneToMany(() => BlockList, (block) => block.blocker, {
+    cascade: true,
+    onUpdate: 'CASCADE',
+  })
+  blocker: BlockList[];
+
+  @OneToMany(() => BlockList, (block) => block.blocked, {
+    cascade: true,
+    onUpdate: 'CASCADE',
+  })
+  blocked: BlockList[];
 
   @OneToMany(() => Post, (post) => post.userInfo, {
     cascade: true,

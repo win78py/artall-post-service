@@ -7,10 +7,12 @@ import { PostModule } from './modules/post/post.module';
 import { LikeModule } from './modules/like/like.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { LikeCommentModule } from './modules/likeComment/likeComment.module';
+import { SeedingModule } from './modules/seeding/seeding.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
+    SeedingModule,
     PostModule,
     LikeModule,
     CommentModule,

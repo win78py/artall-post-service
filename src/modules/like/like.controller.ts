@@ -1,16 +1,15 @@
 import { Controller } from '@nestjs/common';
 import { LikeService } from './like.service';
-import { GetLikeParams } from './dto/getList-like.dto';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CheckLikeExistsRequest,
   CheckLikeExistsResponse,
   CreateLikeRequest,
-  DeleteLikeRequest,
-  DeleteLikeResponse,
+  GetAllLikesRequest,
   GetLikeIdRequest,
   LikeResponse,
   LikesResponse,
+  ToggleLikeResponse,
 } from 'src/common/interface/like.interface';
 
 @Controller('like')
@@ -19,7 +18,7 @@ export class LikeController {
 
   //GET ALL LIKE
   @GrpcMethod('PostService', 'GetAllLikes')
-  async findAll(data: GetLikeParams): Promise<LikesResponse> {
+  async findAll(data: GetAllLikesRequest): Promise<LikesResponse> {
     return this.likeService.getLike(data);
   }
 
@@ -41,10 +40,12 @@ export class LikeController {
     return this.likeService.checkLikeExists(data);
   }
 
-  //DELETE LIKE
-  @GrpcMethod('PostService', 'DeleteLike')
-  async delete(request: DeleteLikeRequest): Promise<DeleteLikeResponse> {
-    const { id } = request;
-    return this.likeService.remove(id);
+  //TOGGLE LIKE
+  @GrpcMethod('PostService', 'ToggleLike')
+  async toggleLike(request: {
+    postId: string;
+    userId: string;
+  }): Promise<ToggleLikeResponse> {
+    return this.likeService.toggleLike(request.postId, request.userId);
   }
 }

@@ -1,10 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { LikeComment } from 'src/entities/likeComment.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from 'src/common/enum/enum';
-import { validate as uuidValidate } from 'uuid';
-import { GetLikeCommentParams } from './dto/getList-likeComment.dto';
 import {
   CheckLikeCommentExistsRequest,
   CheckLikeCommentExistsResponse,
@@ -13,6 +11,8 @@ import {
   GetLikeCommentIdRequest,
   LikesCommentResponse,
   PageMeta,
+  GetAllLikesCommentRequest,
+  ToggleLikeCommentResponse,
 } from '../../common/interface/likeComment.interface';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class LikeCommentService {
   ) {}
 
   async getLikeComment(
-    params: GetLikeCommentParams,
+    params: GetAllLikesCommentRequest,
   ): Promise<LikesCommentResponse> {
     const likeComment = this.likeCommentRepository
       .createQueryBuilder('likeComment')
@@ -32,9 +32,9 @@ export class LikeCommentService {
       .skip(params.skip)
       .take(params.take)
       .orderBy('likeComment.createdAt', Order.DESC);
-    if (params.search) {
-      likeComment.andWhere('likeComment.likecommentId ILIKE :commentId', {
-        likeComment: `%${params.search}%`,
+    if (params.comment) {
+      likeComment.andWhere('likeComment.commentId = :commentId', {
+        commentId: params.comment,
       });
     }
     const [result, total] = await likeComment.getManyAndCount();
@@ -121,6 +121,10 @@ export class LikeCommentService {
     };
   }
 
+  async remove(id: string): Promise<void> {
+    await this.likeCommentRepository.delete(id);
+  }
+
   async checkLikeCommentExists(
     data: CheckLikeCommentExistsRequest,
   ): Promise<CheckLikeCommentExistsResponse> {
@@ -130,15 +134,26 @@ export class LikeCommentService {
     return { exists: !!likeComment };
   }
 
-  async remove(id: string) {
-    if (!uuidValidate(id)) {
-      throw new BadRequestException('Invalid UUID');
+  async toggle(
+    commentId: string,
+    userId: string,
+  ): Promise<ToggleLikeCommentResponse> {
+    const existingLikeComment = await this.likeCommentRepository.findOne({
+      where: { commentId, userId },
+    });
+
+    if (existingLikeComment) {
+      await this.remove(existingLikeComment.id);
+      return {
+        data: null,
+        message: 'Like Comment removed',
+      };
+    } else {
+      const likeComment = await this.create({ commentId, userId });
+      return {
+        data: likeComment,
+        message: 'Like Comment added',
+      };
     }
-    await this.likeCommentRepository
-      .createQueryBuilder('likeComment')
-      .where('likeComment.id = :id', { id })
-      .getOne();
-    await this.likeCommentRepository.softDelete(id);
-    return { data: null, message: 'Like Comment deletion successful' };
   }
 }

@@ -1,16 +1,15 @@
 import { Controller } from '@nestjs/common';
 import { LikeCommentService } from './likeComment.service';
-import { GetLikeCommentParams } from './dto/getList-likeComment.dto';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CheckLikeCommentExistsRequest,
   CheckLikeCommentExistsResponse,
   CreateLikeCommentRequest,
-  DeleteLikeCommentRequest,
-  DeleteLikeCommentResponse,
+  GetAllLikesCommentRequest,
   GetLikeCommentIdRequest,
   LikeCommentResponse,
   LikesCommentResponse,
+  ToggleLikeCommentResponse,
 } from 'src/common/interface/likeComment.interface';
 
 @Controller('like-comment')
@@ -19,7 +18,9 @@ export class LikeCommentController {
 
   //GET ALL LIKE COMMENT
   @GrpcMethod('PostService', 'GetAllLikesComment')
-  async findAll(data: GetLikeCommentParams): Promise<LikesCommentResponse> {
+  async findAll(
+    data: GetAllLikesCommentRequest,
+  ): Promise<LikesCommentResponse> {
     return this.likeCommentService.getLikeComment(data);
   }
 
@@ -47,12 +48,12 @@ export class LikeCommentController {
     return this.likeCommentService.checkLikeCommentExists(data);
   }
 
-  //DELETE LIKE COMMENT
-  @GrpcMethod('PostService', 'DeleteLikeComment')
-  async delete(
-    request: DeleteLikeCommentRequest,
-  ): Promise<DeleteLikeCommentResponse> {
-    const { id } = request;
-    return this.likeCommentService.remove(id);
+  //TOGGLE LIKE
+  @GrpcMethod('PostService', 'ToggleLikeComment')
+  async toggleLikeComment(request: {
+    commentId: string;
+    userId: string;
+  }): Promise<ToggleLikeCommentResponse> {
+    return this.likeCommentService.toggle(request.commentId, request.userId);
   }
 }
