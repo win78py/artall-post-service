@@ -12,7 +12,7 @@ import {
   CommentResponse,
   CommentsResponse,
   UpdateCommentRequest,
-} from 'src/common/interface/comment.interface';
+} from '../../common/interface/comment.interface';
 
 @Controller('comment')
 export class CommentController {

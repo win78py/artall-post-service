@@ -6,7 +6,7 @@ import {
   Column,
 } from 'typeorm';
 import { UserInfo } from './userInfo.entity';
-import { AbstractEntity } from 'src/common/entities';
+import { AbstractEntity } from '../common/entities/abstract.entity';
 import { Post } from './post.entity';
 
 @Entity()

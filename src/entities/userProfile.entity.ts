@@ -10,7 +10,7 @@ import {
   RoleEnum,
   profileVisibilityEnum,
 } from '../common/enum/enum';
-import { AbstractEntity } from 'src/common/entities';
+import { AbstractEntity } from '../common/entities/abstract.entity';
 import { UserInfo } from './userInfo.entity';
 
 @Entity()

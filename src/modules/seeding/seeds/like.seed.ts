@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { Like } from 'src/entities/like.entity';
-import { Post } from 'src/entities/post.entity';
-import { UserInfo } from 'src/entities/userInfo.entity';
+import { Like } from '../../../entities/like.entity';
+import { Post } from '../../../entities/post.entity';
+import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedLikes(
   likeRepository: Repository<Like>,

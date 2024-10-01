@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
-import { Post } from 'src/entities/post.entity';
-import { UserInfo } from 'src/entities/userInfo.entity';
+import { Post } from '../../../entities/post.entity';
+import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedPosts(
   postRepository: Repository<Post>,
