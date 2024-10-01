@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { GenderEnum, RoleEnum } from 'src/common/enum/enum';
-import { UserInfo } from 'src/entities/userInfo.entity';
-import { UserProfile } from 'src/entities/userProfile.entity';
+import { GenderEnum, RoleEnum } from '../../../common/enum/enum';
+import { UserInfo } from '../../../entities/userInfo.entity';
+import { UserProfile } from '../../../entities/userProfile.entity';
 
 export async function seedUsers(
   userInfoRepository: Repository<UserInfo>,

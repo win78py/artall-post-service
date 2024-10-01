@@ -13,7 +13,7 @@ import {
   PostResponse,
   PostsResponse,
   UpdatePostRequest,
-} from 'src/common/interface/post.interface';
+} from '../../common/interface/post.interface';
 
 @Controller('post')
 export class PostController {

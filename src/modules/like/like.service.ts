@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Like } from 'src/entities/like.entity';
+import { Like } from '../../entities/like.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from 'src/common/enum/enum';
+import { Order } from '../../common/enum/enum';
 import {
   CheckLikeExistsRequest,
   CheckLikeExistsResponse,
@@ -13,7 +13,7 @@ import {
   PageMeta,
   GetAllLikesRequest,
   ToggleLikeResponse,
-} from 'src/common/interface/like.interface';
+} from '../../common/interface/like.interface';
 
 @Injectable()
 export class LikeService {

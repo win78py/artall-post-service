@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { LikeComment } from 'src/entities/likeComment.entity';
+import { LikeComment } from '../../entities/likeComment.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from 'src/common/enum/enum';
+import { Order } from '../../common/enum/enum';
 import {
   CheckLikeCommentExistsRequest,
   CheckLikeCommentExistsResponse,

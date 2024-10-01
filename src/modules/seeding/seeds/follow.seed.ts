@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
-import { Follow } from 'src/entities/follow.entity';
-import { UserInfo } from 'src/entities/userInfo.entity';
+import { Follow } from '../../../entities/follow.entity';
+import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedFollows(
   followRepository: Repository<Follow>,

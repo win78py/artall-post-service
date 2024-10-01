@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOneOptions, Repository } from 'typeorm';
-import { Order } from 'src/common/enum/enum';
+import { Order } from '../../common/enum/enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Multer } from 'multer';
 import { validate as uuidValidate } from 'uuid';
@@ -24,7 +24,7 @@ import {
   CommentsResponse,
   UpdateCommentRequest,
   CommentInfoResponse,
-} from 'src/common/interface/comment.interface';
+} from '../../common/interface/comment.interface';
 import { RpcException } from '@nestjs/microservices';
 import { LikeComment } from '../../entities/likeComment.entity';
 

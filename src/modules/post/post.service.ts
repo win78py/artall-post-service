@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOneOptions, In, Repository } from 'typeorm';
-import { Order } from 'src/common/enum/enum';
+import { Order } from '../../common/enum/enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Multer } from 'multer';
 import { validate as uuidValidate } from 'uuid';
@@ -27,7 +27,7 @@ import {
   PostResponse,
   PostsResponse,
   UpdatePostRequest,
-} from 'src/common/interface/post.interface';
+} from '../../common/interface/post.interface';
 import { RpcException } from '@nestjs/microservices';
 
 @Injectable()

@@ -10,7 +10,7 @@ import {
   LikeResponse,
   LikesResponse,
   ToggleLikeResponse,
-} from 'src/common/interface/like.interface';
+} from '../../common/interface/like.interface';
 
 @Controller('like')
 export class LikeController {

@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { Comment } from 'src/entities/comment.entity';
-import { UserInfo } from 'src/entities/userInfo.entity';
-import { Post } from 'src/entities/post.entity';
+import { Comment } from '../../../entities/comment.entity';
+import { UserInfo } from '../../../entities/userInfo.entity';
+import { Post } from '../../../entities/post.entity';
 
 export async function seedComments(
   commentRepository: Repository<Comment>,

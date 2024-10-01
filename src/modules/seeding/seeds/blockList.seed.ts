@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
-import { BlockList } from 'src/entities/blocklist.entity';
-import { UserInfo } from 'src/entities/userInfo.entity';
+import { BlockList } from '../../../entities/blockList.entity';
+import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedBlockList(
   blockListRepository: Repository<BlockList>,
