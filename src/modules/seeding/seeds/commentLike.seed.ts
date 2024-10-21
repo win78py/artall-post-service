@@ -3,10 +3,10 @@ import { LikeComment } from '../../../entities/likeComment.entity';
 import { Comment } from '../../../entities/comment.entity';
 import { UserInfo } from '../../../entities/userInfo.entity';
 
-export async function seedLikeComments(
-  likeCommentRepository: Repository<LikeComment>,
-  commentRepository: Repository<Comment>,
+export async function seedCommentLikes(
+  commentLikesRepository: Repository<LikeComment>,
   userInfoRepository: Repository<UserInfo>,
+  commentRepository: Repository<Comment>,
 ) {
   const comments = await commentRepository.find();
   const users = await userInfoRepository.find();
@@ -15,22 +15,22 @@ export async function seedLikeComments(
     throw new Error('No comments or users found');
   }
 
-  const likeComments = [];
+  const commentLikes = [];
 
   for (const comment of comments) {
     const numberOfLikes = Math.floor(Math.random() * 3) + 1;
     const shuffledUsers = users.sort(() => 0.5 - Math.random());
 
     for (let i = 0; i < numberOfLikes; i++) {
-      const likeComment = likeCommentRepository.create({
+      const likeComment = commentLikesRepository.create({
         commentId: comment.id,
         userId: shuffledUsers[i].id,
         comment: comment,
         user: shuffledUsers[i],
       });
-      likeComments.push(likeComment);
+      commentLikes.push(likeComment);
     }
   }
 
-  await likeCommentRepository.save(likeComments);
+  await commentLikesRepository.save(commentLikes);
 }

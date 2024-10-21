@@ -29,6 +29,7 @@ export class PageOptionsDto {
   take?: number = 10;
 
   get skip(): number {
+    console.log('Page:', this.page);
     return (this.page - 1) * this.take;
   }
 }

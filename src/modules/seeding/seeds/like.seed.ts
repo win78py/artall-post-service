@@ -5,8 +5,8 @@ import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedLikes(
   likeRepository: Repository<Like>,
-  postRepository: Repository<Post>,
   userInfoRepository: Repository<UserInfo>,
+  postRepository: Repository<Post>,
 ) {
   const posts = await postRepository.find();
   const users = await userInfoRepository.find();

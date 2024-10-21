@@ -17,8 +17,7 @@ export enum StatusEnum {
 
 export enum RoleEnum {
   ADMIN = 'admin',
-  STUDENT = 'user',
-  USER = 'USER',
+  USER = 'user',
 }
 
 export enum TypeFileEnum {

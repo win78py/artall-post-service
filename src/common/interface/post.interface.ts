@@ -2,6 +2,9 @@ import { Observable } from 'rxjs';
 
 export interface PostServiceClient {
   getAllPosts(request: GetAllPostsRequest): Observable<PostsResponse>;
+  getRandomPosts(
+    request: GetRandomPostsRequest,
+  ): Observable<RandomPostsResponse>;
   getPostId(request: GetPostIdRequest): Observable<PostInfoResponse>;
   createPost(request: CreatePostRequest): Observable<PostResponse>;
   checkPostExists(
@@ -14,7 +17,14 @@ export interface PostServiceClient {
 export interface GetAllPostsRequest {
   page?: number;
   take?: number;
+  skip?: number;
   content?: string;
+}
+
+export interface GetRandomPostsRequest {
+  take?: number;
+  content?: string;
+  cursor?: string;
 }
 
 export interface GetPostIdRequest {
@@ -58,6 +68,8 @@ export interface PostInfoResponse {
     username: string;
     profilePicture: string;
   };
+  likeCount: number;
+  commentCount: number;
 }
 
 export interface PostResponse {
@@ -85,6 +97,20 @@ export interface PageMeta {
 export interface PostsResponse {
   data: PostInfoResponse[];
   meta: PageMeta;
+  message: string;
+}
+
+export interface CursorPageMeta {
+  cursor: string | null;
+  take: number;
+  itemCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface RandomPostsResponse {
+  data: PostInfoResponse[];
+  meta: CursorPageMeta;
   message: string;
 }
 

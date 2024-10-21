@@ -5,6 +5,7 @@ package posts;
 service PostService {
   // Post --
   rpc GetAllPosts (GetAllPostsRequest) returns (PostsResponse);
+  rpc GetRandomPosts (GetRandomPostsRequest) returns (RandomPostsResponse);
   rpc GetPostId (GetPostIdRequest) returns (PostResponse);
   rpc CreatePost (CreatePostRequest) returns (PostResponse);
   rpc CheckPostExists (CheckPostExistsRequest) returns (CheckPostExistsResponse);
@@ -38,7 +39,14 @@ service PostService {
 message GetAllPostsRequest {
   int32 page = 1;
   int32 take = 2;
-  string content = 3;
+  int32 skip = 3;
+  string content = 4;
+}
+
+message GetRandomPostsRequest {
+  int32 take = 1;
+  string content = 2;
+  string cursor = 3;
 }
 
 message GetPostIdRequest {
@@ -78,6 +86,8 @@ message PostResponse {
   string deletedBy = 9;
   string userId = 10;
   UserInfo userInfo = 11;
+  int32 likeCount = 12;
+  int32 commentCount = 13;
 }
 
 message UserInfo {
@@ -89,6 +99,20 @@ message UserInfo {
 message PostsResponse {
   repeated PostResponse data = 1;
   PageMeta meta = 2;
+  string message = 3;
+}
+
+message CursorPageMeta {
+  string cursor = 1;
+  int32 take = 2;
+  int32 itemCount = 3;
+  bool hasPreviousPage = 4;
+  bool hasNextPage = 5;
+}
+
+message RandomPostsResponse {
+  repeated PostResponse data = 1;
+  CursorPageMeta meta = 2;
   string message = 3;
 }
 

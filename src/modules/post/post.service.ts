@@ -11,7 +11,6 @@ import { Order } from '../../common/enum/enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Multer } from 'multer';
 import { validate as uuidValidate } from 'uuid';
-import { GetPostParams } from './dto/getList-post.dto';
 import { Post } from '../../entities/post.entity';
 import { Comment } from '../../entities/comment.entity';
 import { Like } from '../../entities/like.entity';
@@ -27,8 +26,13 @@ import {
   PostResponse,
   PostsResponse,
   UpdatePostRequest,
+  GetAllPostsRequest,
+  RandomPostsResponse,
+  GetRandomPostsRequest,
+  CursorPageMeta,
 } from '../../common/interface/post.interface';
 import { RpcException } from '@nestjs/microservices';
+import { Follow } from 'entities/follow.entity';
 
 @Injectable()
 export class PostService {
@@ -36,14 +40,18 @@ export class PostService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
+    @InjectRepository(Follow)
+    private readonly followRepository: Repository<Follow>,
     private readonly entityManager: EntityManager,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getPosts(params: GetPostParams): Promise<PostsResponse> {
+  async getPosts(params: GetAllPostsRequest): Promise<PostsResponse> {
     const posts = this.postsRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.userInfo', 'userInfo')
+      .leftJoinAndSelect('post.likeList', 'like')
+      .leftJoinAndSelect('post.comment', 'comment')
       .skip(params.skip)
       .take(params.take)
       .orderBy('post.createdAt', Order.DESC);
@@ -69,6 +77,8 @@ export class PostService {
         username: post.userInfo.username,
         profilePicture: post.userInfo.profilePicture,
       },
+      likeCount: post.likeList.length,
+      commentCount: post.comment.length,
     }));
 
     const meta: PageMeta = {
@@ -79,6 +89,169 @@ export class PostService {
       hasPreviousPage: params.page > 1,
       hasNextPage: params.page < Math.ceil(total / params.take),
     };
+    return { data, meta, message: 'Success' };
+  }
+
+  private calculatePopularityScore(
+    likeCount: number,
+    commentCount: number,
+  ): number {
+    const totalInteractions = likeCount + commentCount;
+
+    switch (true) {
+      case totalInteractions >= 31:
+        return 30;
+      case totalInteractions >= 11:
+        return 20;
+      case totalInteractions >= 1:
+        return 10;
+      default:
+        return 0;
+    }
+  }
+
+  private currentUserId = 'a7dc1c9b-1cc7-4b48-a755-738b92feabd6';
+
+  async calculateFollowScore(
+    post: Post,
+    currentUserId: string,
+  ): Promise<number> {
+    const follows = await this.followRepository.find({
+      where: { followerId: currentUserId },
+      select: ['followingId'],
+    });
+
+    const followedUserIds = follows.map((follow) => follow.followingId);
+
+    if (followedUserIds.includes(post.userId)) {
+      return 30;
+    }
+
+    return 0;
+  }
+
+  async calculateRecencyScore(post: Post): Promise<number> {
+    const now = new Date();
+    const createdAt = post.createdAt;
+    const timeDiff = Math.abs(now.getTime() - createdAt.getTime());
+
+    const secondsDiff = Math.floor(timeDiff / 1000);
+
+    const getRandomScore = (maxScore: number): number => {
+      return Math.floor(Math.random() * (maxScore + 1));
+    };
+
+    switch (true) {
+      case secondsDiff < 3600:
+        return getRandomScore(15);
+      case secondsDiff < 43200:
+        return getRandomScore(10);
+      case secondsDiff < 604800:
+        return getRandomScore(5);
+      default:
+        return 0;
+    }
+  }
+
+  private generateRandomScore(): number {
+    return Math.floor(Math.random() * 10) + 1;
+  }
+
+  async calculatePostScore(post: Post, currentUserId: string): Promise<number> {
+    let totalScore = 0;
+
+    totalScore += this.calculatePopularityScore(
+      post.likeList.length,
+      post.comment.length,
+    );
+
+    totalScore += await this.calculateFollowScore(post, currentUserId);
+
+    totalScore += await this.calculateRecencyScore(post);
+
+    totalScore += this.generateRandomScore();
+
+    return totalScore;
+  }
+
+  async getRandomPosts(
+    params: GetRandomPostsRequest,
+  ): Promise<RandomPostsResponse> {
+    const postsQuery = this.postsRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.userInfo', 'userInfo')
+      .leftJoinAndSelect('post.likeList', 'like')
+      .leftJoinAndSelect('post.comment', 'comment');
+
+    if (params.content) {
+      postsQuery.andWhere('post.content ILIKE :post', {
+        post: `%${params.content}%`,
+      });
+    }
+
+    // Lấy tất cả bài đăng
+    const allPosts = await postsQuery.getMany();
+
+    // Tính toán điểm cho từng bài đăng
+    const postsWithScores = await Promise.all(
+      allPosts.map(async (post) => {
+        const score = await this.calculatePostScore(post, this.currentUserId);
+        return { post, score };
+      }),
+    );
+
+    // Sắp xếp theo điểm giảm dần
+    postsWithScores.sort((a, b) => b.score - a.score);
+
+    const total = postsWithScores.length; // Tổng số bài đăng
+    let startIndex = 0; // Chỉ số bắt đầu
+    if (params.cursor) {
+      // Tìm chỉ số của lastPostId trong danh sách đã sắp xếp
+      const lastPostIndex = postsWithScores.findIndex(
+        ({ post }) => post.id === params.cursor,
+      );
+
+      // Nếu tìm thấy lastPostId, bắt đầu từ chỉ số tiếp theo
+      if (lastPostIndex !== -1) {
+        startIndex = lastPostIndex + 1;
+      }
+    }
+
+    // Lấy các bài đăng tiếp theo
+    const paginatedPosts = postsWithScores.slice(
+      startIndex,
+      startIndex + params.take,
+    );
+
+    // Chuyển đổi sang định dạng dữ liệu cần trả về
+    const data: PostInfoResponse[] = paginatedPosts.map(({ post }) => ({
+      id: post.id,
+      content: post.content,
+      mediaPath: post.mediaPath,
+      createdAt: post.createdAt ? post.createdAt.toISOString() : null,
+      createdBy: post.createdBy || null,
+      updatedAt: post.updatedAt ? post.updatedAt.toISOString() : null,
+      updatedBy: post.updatedBy || null,
+      deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
+      deletedBy: post.deletedBy || null,
+      userId: post.userId,
+      userInfo: {
+        id: post.userInfo.id,
+        username: post.userInfo.username,
+        profilePicture: post.userInfo.profilePicture,
+      },
+      likeCount: post.likeList.length,
+      commentCount: post.comment.length,
+    }));
+
+    // Tạo meta cho pagination
+    const meta: CursorPageMeta = {
+      cursor: params.cursor || null, // Nếu cần, cập nhật logic cho cursor
+      take: params.take,
+      itemCount: total,
+      hasPreviousPage: false, // Cần cập nhật nếu bạn muốn hỗ trợ trang trước
+      hasNextPage: postsWithScores.length > params.take, // Kiểm tra có trang tiếp theo không
+    };
 
     return { data, meta, message: 'Success' };
   }
@@ -87,6 +260,9 @@ export class PostService {
     const post = await this.postsRepository
       .createQueryBuilder('post')
       .select(['post'])
+      .leftJoinAndSelect('post.userInfo', 'userInfo')
+      .leftJoinAndSelect('post.likeList', 'like')
+      .leftJoinAndSelect('post.comment', 'comment')
       .where('post.id = :id', { id: request.id })
       .getOne();
 
@@ -110,6 +286,8 @@ export class PostService {
         username: post.userInfo.username,
         profilePicture: post.userInfo.profilePicture,
       },
+      likeCount: post.likeList.length,
+      commentCount: post.comment.length,
     };
   }
 

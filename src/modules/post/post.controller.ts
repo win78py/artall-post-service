@@ -12,6 +12,7 @@ import {
   PostInfoResponse,
   PostResponse,
   PostsResponse,
+  RandomPostsResponse,
   UpdatePostRequest,
 } from '../../common/interface/post.interface';
 
@@ -23,6 +24,12 @@ export class PostController {
   @GrpcMethod('PostService', 'GetAllPosts')
   async findAll(data: GetPostParams): Promise<PostsResponse> {
     return this.postService.getPosts(data);
+  }
+
+  //GET RANDOM POSTS
+  @GrpcMethod('PostService', 'GetRandomPosts')
+  async findRandomPost(data: GetPostParams): Promise<RandomPostsResponse> {
+    return this.postService.getRandomPosts(data);
   }
 
   //GET POST BY ID
