@@ -47,6 +47,7 @@ export class CommentController {
   //UPDATE COMMENT
   @GrpcMethod('PostService', 'UpdateComment')
   async update(data: UpdateCommentRequest): Promise<CommentResponse> {
+    console.log('UpdateComment: ', data);
     return this.commentService.update(data);
   }
 

@@ -11,7 +11,6 @@ import { Order } from '../../common/enum/enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Multer } from 'multer';
 import { validate as uuidValidate } from 'uuid';
-import { GetCommentParams } from './dto/getList-comment.dto';
 import { Comment } from '../../entities/comment.entity';
 import {
   CheckCommentExistsRequest,
@@ -24,6 +23,7 @@ import {
   CommentsResponse,
   UpdateCommentRequest,
   CommentInfoResponse,
+  GetAllCommentsRequest,
 } from '../../common/interface/comment.interface';
 import { RpcException } from '@nestjs/microservices';
 import { LikeComment } from '../../entities/likeComment.entity';
@@ -38,16 +38,24 @@ export class CommentService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getComments(params: GetCommentParams): Promise<CommentsResponse> {
+  async getComments(params: GetAllCommentsRequest): Promise<CommentsResponse> {
+    const userId = params.userId;
     const comments = this.commentsRepository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('comment.likeCommentList', 'likeComment')
+      .leftJoin(
+        'comment.likeCommentList',
+        'userLikeComment',
+        'userLikeComment.commentId = comment.id AND userLikeComment.userId = :userId',
+        { userId },
+      )
       .skip(params.skip)
       .take(params.take)
       .orderBy('comment.createdAt', Order.DESC);
-    if (params.content) {
-      comments.andWhere('comment.content ILIKE :content', {
-        content: `%${params.content}%`,
+    if (params.postId) {
+      comments.andWhere('comment.postId = :postId', {
+        postId: params.postId,
       });
     }
     const [result, total] = await comments.getManyAndCount();
@@ -68,6 +76,10 @@ export class CommentService {
         username: comment.user.username,
         profilePicture: comment.user.profilePicture,
       },
+      likeCount: comment.likeCommentList.length,
+      isLiked: comment.likeCommentList.some(
+        (likeComment) => likeComment.userId === params.userId,
+      ),
     }));
 
     const meta: PageMeta = {

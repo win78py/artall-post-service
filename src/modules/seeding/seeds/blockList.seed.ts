@@ -6,29 +6,37 @@ export async function seedBlockList(
   blockListRepository: Repository<BlockList>,
   userInfoRepository: Repository<UserInfo>,
 ) {
-  const user1 = await userInfoRepository.findOne({
-    where: { username: 'thangtnsa' },
-  });
-  const user5 = await userInfoRepository.findOne({
-    where: { username: 'phuongnhu' },
-  });
-  const user6 = await userInfoRepository.findOne({
-    where: { username: 'linhvu' },
-  });
+  // Fetch all users from the userInfoRepository
+  const users = await userInfoRepository.find();
+  if (users.length < 2) {
+    throw new Error('Not enough users in the database to create block list.');
+  }
 
-  const block1 = blockListRepository.create({
-    blockerId: user5.id,
-    blockedId: user6.id,
-    blocker: user5,
-    blocked: user6,
-  });
+  const blocks: BlockList[] = [];
+  const totalBlocks = 3;
 
-  const block2 = blockListRepository.create({
-    blockerId: user6.id,
-    blockedId: user1.id,
-    blocker: user6,
-    blocked: user1,
-  });
+  // Create block entries
+  for (let i = 0; i < totalBlocks; i++) {
+    const blockerIndex = Math.floor(Math.random() * users.length);
+    let blockedIndex = Math.floor(Math.random() * users.length);
 
-  await blockListRepository.save([block1, block2]);
+    // Ensure the blocker and blocked users are different
+    while (blockedIndex === blockerIndex) {
+      blockedIndex = Math.floor(Math.random() * users.length);
+    }
+
+    const blocker = users[blockerIndex];
+    const blocked = users[blockedIndex];
+
+    const block = blockListRepository.create({
+      blockerId: blocker.id,
+      blockedId: blocked.id,
+      blocker,
+      blocked,
+    });
+
+    blocks.push(block);
+  }
+
+  await blockListRepository.save(blocks);
 }

@@ -24,7 +24,7 @@ export class LikeComment extends AbstractEntity {
   @JoinColumn({ name: 'commentId', referencedColumnName: 'id' })
   comment: Comment;
 
-  @ManyToOne(() => UserInfo, (user) => user.likeList)
+  @ManyToOne(() => UserInfo, (user) => user.likeCommentList)
   @JoinColumn({ name: 'userId', referencedColumnName: 'id' })
   user: UserInfo;
 

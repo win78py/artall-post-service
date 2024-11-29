@@ -1,3 +1,4 @@
+// follow.seed.ts
 import { Repository } from 'typeorm';
 import { Follow } from '../../../entities/follow.entity';
 import { UserInfo } from '../../../entities/userInfo.entity';
@@ -6,57 +7,41 @@ export async function seedFollows(
   followRepository: Repository<Follow>,
   userInfoRepository: Repository<UserInfo>,
 ) {
-  const user1 = await userInfoRepository.findOne({
-    where: { username: 'thangtnsa' },
-  });
-  const user2 = await userInfoRepository.findOne({
-    where: { username: 'hnhi' },
-  });
-  const user3 = await userInfoRepository.findOne({
-    where: { username: 'locphuho' },
-  });
-  const user4 = await userInfoRepository.findOne({
-    where: { username: 'vulong' },
-  });
-  const user5 = await userInfoRepository.findOne({
-    where: { username: 'phuongnhu' },
-  });
+  const users = await userInfoRepository.find();
 
-  const follow1 = followRepository.create({
-    followerId: user1.id,
-    followingId: user2.id,
-    follower: user1,
-    following: user2,
-  });
+  if (users.length < 30) {
+    throw new Error('Not enough users found to create followers.');
+  }
 
-  const follow2 = followRepository.create({
-    followerId: user2.id,
-    followingId: user3.id,
-    follower: user2,
-    following: user3,
-  });
+  for (const user of users) {
+    const shuffledUsers = users
+      .filter((u) => u.id !== user.id) // Exclude the user from their own follow list
+      .sort(() => Math.random() - 0.5); // Shuffle users
 
-  const follow3 = followRepository.create({
-    followerId: user3.id,
-    followingId: user1.id,
-    follower: user3,
-    following: user1,
-  });
+    // Select first 10 unique users to follow and to be followed by
+    const followingUsers = shuffledUsers.slice(0, 10);
+    const followerUsers = shuffledUsers.slice(10, 20);
 
-  const follow4 = followRepository.create({
-    followerId: user4.id,
-    followingId: user5.id,
-    follower: user4,
-    following: user5,
-  });
+    // Create follows for following users
+    for (const followingUser of followingUsers) {
+      const follow = followRepository.create({
+        followerId: user.id,
+        followingId: followingUser.id,
+        follower: user,
+        following: followingUser,
+      });
+      await followRepository.save(follow);
+    }
 
-  const follow5 = followRepository.create({
-    followerId: user5.id,
-    followingId: user1.id,
-    follower: user5,
-    following: user1,
-  });
-
-  // Lưu các follow records vào cơ sở dữ liệu
-  await followRepository.save([follow1, follow2, follow3, follow4, follow5]);
+    // Create follows for followers
+    for (const followerUser of followerUsers) {
+      const follow = followRepository.create({
+        followerId: followerUser.id,
+        followingId: user.id,
+        follower: followerUser,
+        following: user,
+      });
+      await followRepository.save(follow);
+    }
+  }
 }

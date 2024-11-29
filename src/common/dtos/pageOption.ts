@@ -9,6 +9,9 @@ export class PageOptionsDto {
   @IsString()
   content?: string = '';
 
+  @IsString()
+  postId?: string = '';
+
   @IsEnum(Order)
   @IsOptional()
   order?: Order = Order.DESC;

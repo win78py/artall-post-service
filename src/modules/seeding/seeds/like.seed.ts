@@ -12,13 +12,12 @@ export async function seedLikes(
   const users = await userInfoRepository.find();
 
   if (posts.length === 0 || users.length === 0) {
-    throw new Error('No posts or users found');
+    throw new Error('No posts or users found to create likes.');
   }
 
-  const likes = [];
-
   for (const post of posts) {
-    const numberOfLikes = Math.floor(Math.random() * 5) + 1;
+    // Randomly select a number of likes for each post (0 to 10)
+    const numberOfLikes = Math.floor(Math.random() * 11);
     const shuffledUsers = users.sort(() => 0.5 - Math.random());
 
     for (let i = 0; i < numberOfLikes; i++) {
@@ -28,9 +27,7 @@ export async function seedLikes(
         post: post,
         user: shuffledUsers[i],
       });
-      likes.push(like);
+      await likeRepository.save(like);
     }
   }
-
-  await likeRepository.save(likes);
 }

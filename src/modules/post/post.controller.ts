@@ -9,9 +9,11 @@ import {
   DeletePostRequest,
   DeletePostResponse,
   GetPostIdRequest,
+  GetTotalPostsRequest,
   PostInfoResponse,
   PostResponse,
   PostsResponse,
+  TotalPostsResponse,
   UpdatePostRequest,
 } from '../../common/interface/post.interface';
 
@@ -23,6 +25,25 @@ export class PostController {
   @GrpcMethod('PostService', 'GetAllPosts')
   async findAll(data: GetPostParams): Promise<PostsResponse> {
     return this.postService.getPosts(data);
+  }
+
+  //GET RANDOM POSTS
+  @GrpcMethod('PostService', 'GetRandomPosts')
+  async findRandom(data: GetPostParams): Promise<PostsResponse> {
+    return this.postService.getRandomPosts(data);
+  }
+
+  //GET POSTS DELETED
+  @GrpcMethod('PostService', 'GetPostsDeleted')
+  async findDeleted(data: GetPostParams): Promise<PostsResponse> {
+    return this.postService.getPostDeleted(data);
+  }
+
+  @GrpcMethod('PostService', 'GetTotalPosts')
+  async findTotalUserInfo(
+    data: GetTotalPostsRequest,
+  ): Promise<TotalPostsResponse> {
+    return this.postService.getTotalPosts(data);
   }
 
   //GET POST BY ID
@@ -46,6 +67,7 @@ export class PostController {
   //UPDATE POST
   @GrpcMethod('PostService', 'UpdatePost')
   async update(data: UpdatePostRequest): Promise<PostResponse> {
+    console.log('update: ', data);
     return this.postService.update(data);
   }
 
@@ -53,6 +75,7 @@ export class PostController {
   @GrpcMethod('PostService', 'DeletePost')
   async delete(request: DeletePostRequest): Promise<DeletePostResponse> {
     const { id } = request;
+    console.log('delete: ', id);
     return this.postService.remove(id);
   }
 }

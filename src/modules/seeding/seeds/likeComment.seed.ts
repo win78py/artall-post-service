@@ -4,7 +4,7 @@ import { Comment } from '../../../entities/comment.entity';
 import { UserInfo } from '../../../entities/userInfo.entity';
 
 export async function seedLikeComments(
-  likeCommentRepository: Repository<LikeComment>,
+  commentLikeRepository: Repository<LikeComment>,
   commentRepository: Repository<Comment>,
   userInfoRepository: Repository<UserInfo>,
 ) {
@@ -18,11 +18,12 @@ export async function seedLikeComments(
   const likeComments = [];
 
   for (const comment of comments) {
-    const numberOfLikes = Math.floor(Math.random() * 3) + 1;
+    // Randomly select a number of likes for each comment (0 to 5)
+    const numberOfLikes = Math.floor(Math.random() * 6);
     const shuffledUsers = users.sort(() => 0.5 - Math.random());
 
     for (let i = 0; i < numberOfLikes; i++) {
-      const likeComment = likeCommentRepository.create({
+      const likeComment = commentLikeRepository.create({
         commentId: comment.id,
         userId: shuffledUsers[i].id,
         comment: comment,
@@ -32,5 +33,5 @@ export async function seedLikeComments(
     }
   }
 
-  await likeCommentRepository.save(likeComments);
+  await commentLikeRepository.save(likeComments);
 }
