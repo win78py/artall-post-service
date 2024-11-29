@@ -1,6 +1,5 @@
 import { Controller } from '@nestjs/common';
 import { CommentService } from './comment.service';
-import { GetCommentParams } from './dto/getList-comment.dto';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CheckCommentExistsRequest,
@@ -12,6 +11,7 @@ import {
   CommentResponse,
   CommentsResponse,
   UpdateCommentRequest,
+  GetAllCommentsRequest,
 } from '../../common/interface/comment.interface';
 
 @Controller('comment')
@@ -20,7 +20,7 @@ export class CommentController {
 
   //GET ALL COMMENTS
   @GrpcMethod('PostService', 'GetAllComments')
-  async findAll(data: GetCommentParams): Promise<CommentsResponse> {
+  async findAll(data: GetAllCommentsRequest): Promise<CommentsResponse> {
     return this.commentService.getComments(data);
   }
 

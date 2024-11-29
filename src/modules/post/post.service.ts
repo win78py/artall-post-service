@@ -242,10 +242,8 @@ export class PostService {
       });
     }
 
-    // Lấy tất cả bài đăng
     const allPosts = await postsQuery.getMany();
 
-    // Tính toán điểm cho từng bài đăng
     const postsWithScores = await Promise.all(
       allPosts.map(async (post) => {
         const score = await this.calculatePostScore(post, this.currentUserId);
@@ -253,17 +251,14 @@ export class PostService {
       }),
     );
 
-    // Sắp xếp theo điểm
     postsWithScores.sort((a, b) => b.score - a.score);
 
-    // Áp dụng phân trang
     const total = postsWithScores.length; // Tổng số bài đăng
     const paginatedPosts = postsWithScores.slice(
       params.skip,
       params.skip + params.take,
     );
 
-    // Chuyển đổi sang định dạng dữ liệu cần trả về
     const data: PostInfoResponse[] = paginatedPosts.map(({ post }) => ({
       id: post.id,
       content: post.content,
@@ -285,7 +280,6 @@ export class PostService {
       isLiked: false,
     }));
 
-    // Tạo meta cho phân trang
     const meta: PageMeta = {
       page: params.page,
       take: params.take,
