@@ -12,6 +12,7 @@ import { Like } from './like.entity';
 import { Comment } from './comment.entity';
 import { UserProfile } from './userProfile.entity';
 import { BlockList } from './blockList.entity';
+import { LikeComment } from './likeComment.entity';
 
 @Entity()
 export class UserInfo extends AbstractEntity {
@@ -66,6 +67,12 @@ export class UserInfo extends AbstractEntity {
     onUpdate: 'CASCADE',
   })
   likeList: Like[];
+
+  @OneToMany(() => LikeComment, (LikeComment) => LikeComment.user, {
+    cascade: true,
+    onUpdate: 'CASCADE',
+  })
+  likeCommentList: LikeComment[];
 
   @OneToMany(() => Comment, (comment) => comment.user, {
     cascade: true,

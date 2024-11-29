@@ -11,6 +11,10 @@ import { Comment } from '../../entities/comment.entity';
 import { seedBlockList } from './seeds/blockList.seed';
 import { seedComments } from './seeds/comment.seed';
 import { seedPosts } from './seeds/post.seed';
+import { seedLikes } from './seeds/like.seed';
+import { Like } from 'entities/like.entity';
+import { LikeComment } from 'entities/likeComment.entity';
+import { seedLikeComments } from './seeds/likeComment.seed';
 
 @Injectable()
 export class SeedingService {
@@ -30,6 +34,9 @@ export class SeedingService {
       const followRepository = queryRunner.manager.getRepository(Follow);
       const postRepository = queryRunner.manager.getRepository(Post);
       const commentRepository = queryRunner.manager.getRepository(Comment);
+      const likeRepository = queryRunner.manager.getRepository(Like);
+      const commentLikeRepository =
+        queryRunner.manager.getRepository(LikeComment);
 
       // Xóa dữ liệu hiện có
       const usersInfo = await userInfoRepository.find();
@@ -38,12 +45,16 @@ export class SeedingService {
       const follow = await followRepository.find();
       const post = await postRepository.find();
       const comment = await commentRepository.find();
+      const like = await likeRepository.find();
+      const commentLike = await commentLikeRepository.find();
 
+      await commentLikeRepository.remove(commentLike);
+      await likeRepository.remove(like);
       await commentRepository.remove(comment);
       await postRepository.remove(post);
       await blockListRepository.remove(blockList);
       await followRepository.remove(follow);
-      await userProfileRepository.remove(usersProfile); // Xóa userProfile trước để tránh ràng buộc liên kết
+      await userProfileRepository.remove(usersProfile);
       await userInfoRepository.remove(usersInfo);
 
       // Seed dữ liệu
@@ -52,6 +63,12 @@ export class SeedingService {
       await seedBlockList(blockListRepository, userInfoRepository);
       await seedPosts(postRepository, userInfoRepository);
       await seedComments(commentRepository, userInfoRepository, postRepository);
+      await seedLikes(likeRepository, postRepository, userInfoRepository);
+      await seedLikeComments(
+        commentLikeRepository,
+        commentRepository,
+        userInfoRepository,
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {

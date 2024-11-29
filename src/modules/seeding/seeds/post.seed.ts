@@ -6,15 +6,11 @@ export async function seedPosts(
   postRepository: Repository<Post>,
   userInfoRepository: Repository<UserInfo>,
 ) {
-  const user1 = await userInfoRepository.findOne({
-    where: { username: 'thangtnsa' },
-  });
-  const user2 = await userInfoRepository.findOne({
-    where: { username: 'hnhi' },
-  });
-  const user3 = await userInfoRepository.findOne({
-    where: { username: 'locphuho' },
-  });
+  // Fetch all users from the userInfoRepository
+  const users = await userInfoRepository.find();
+  if (users.length === 0) {
+    throw new Error('No users found in the database.');
+  }
 
   const captions = [
     'Thiết kế không chỉ là công việc, mà còn là đam mê của tôi.',
@@ -43,49 +39,35 @@ export async function seedPosts(
   ];
 
   const posts: Post[] = [];
+  const totalPosts = 40;
 
-  const totalPosts = 30;
-  const minPostsPerUser = 9;
+  // Iterate through each user and assign them a random number of posts between 1 and 5
+  for (const user of users) {
+    const numPosts = Math.floor(Math.random() * 5) + 1;
 
-  for (let i = 0; i < minPostsPerUser; i++) {
-    const randomCaption = captions[Math.floor(Math.random() * captions.length)];
-    const randomMediaLinks = mediaLinks
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.floor(Math.random() * 5) + 1);
+    for (let i = 0; i < numPosts; i++) {
+      const randomCaption =
+        captions[Math.floor(Math.random() * captions.length)];
+      const randomMediaLinks = mediaLinks
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.floor(Math.random() * 5) + 1);
 
-    const post1 = postRepository.create({
-      content: randomCaption,
-      mediaPath: randomMediaLinks,
-      userId: user1.id,
-      userInfo: user1,
-    });
+      const post = postRepository.create({
+        content: randomCaption,
+        mediaPath: randomMediaLinks,
+        userId: user.id,
+        userInfo: user,
+      });
 
-    const post2 = postRepository.create({
-      content: randomCaption,
-      mediaPath: randomMediaLinks,
-      userId: user2.id,
-      userInfo: user2,
-    });
+      posts.push(post);
 
-    posts.push(post1, post2);
+      // Stop if we've reached the total number of posts desired
+      if (posts.length >= totalPosts) break;
+    }
+
+    if (posts.length >= totalPosts) break;
   }
 
-  for (let i = posts.length; i < totalPosts; i++) {
-    const randomCaption = captions[Math.floor(Math.random() * captions.length)];
-    const randomMediaLinks = mediaLinks
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.floor(Math.random() * 5) + 1);
-    const randomUser = [user1, user2, user3][Math.floor(Math.random() * 3)];
-
-    const post = postRepository.create({
-      content: randomCaption,
-      mediaPath: randomMediaLinks,
-      userId: randomUser.id,
-      userInfo: randomUser,
-    });
-
-    posts.push(post);
-  }
-
+  // Save all posts to the repository
   await postRepository.save(posts);
 }
