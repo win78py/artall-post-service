@@ -33,8 +33,8 @@ export class CommentService {
   private readonly logger = new Logger(CommentService.name);
   constructor(
     @InjectRepository(Comment)
-    private readonly commentsRepository: Repository<Comment>,
-    private readonly entityManager: EntityManager,
+    public readonly commentsRepository: Repository<Comment>,
+    public readonly entityManager: EntityManager,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 

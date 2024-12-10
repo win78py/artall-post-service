@@ -10,6 +10,7 @@ import {
 import { UserInfo } from './userInfo.entity';
 import { Like } from './like.entity';
 import { Comment } from './comment.entity';
+import { Donation } from './donation.entity';
 
 @Entity()
 export class Post extends AbstractEntity {
@@ -40,6 +41,12 @@ export class Post extends AbstractEntity {
     onUpdate: 'CASCADE',
   })
   comment: Comment[];
+
+  @OneToMany(() => Donation, (donation) => donation.post, {
+    cascade: true,
+    onUpdate: 'CASCADE',
+  })
+  donation: Donation[];
 
   constructor(post: Partial<Post>) {
     super();

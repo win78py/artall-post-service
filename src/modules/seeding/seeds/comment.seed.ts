@@ -12,16 +12,16 @@ export async function seedComments(
   const posts = await postRepository.find();
 
   const commentContents = [
-    'Thiết kế này thực sự rất sáng tạo!',
-    'Tôi rất thích cách sử dụng màu sắc trong bài viết này.',
-    'Có thể cải thiện thêm một chút về bố cục.',
-    'Đây là ý tưởng mà tôi đã tìm kiếm bấy lâu!',
-    'Thiết kế rất chuyên nghiệp và chi tiết!',
-    'Bài viết rất thú vị, cảm ơn bạn đã chia sẻ.',
-    'Tôi đã học được rất nhiều từ bài viết này.',
-    'Bạn có thể cho tôi biết phần mềm nào bạn dùng để thiết kế không?',
-    'Cách sắp xếp các phần rất logic!',
-    'Bạn thật sự có tài năng trong việc thiết kế đồ họa!',
+    'This design is really creative!',
+    'I really like the use of colors in this article.',
+    'The layout could be improved a bit.',
+    'This is the idea I have been looking for!',
+    'The design is very professional and detailed!',
+    'The article is very interesting, thanks for sharing.',
+    'I learned a lot from this article.',
+    'Can you tell me what software you used to design?',
+    'The arrangement of the sections is very logical!',
+    'You are really talented in graphic design!',
   ];
 
   const comments: Comment[] = [];

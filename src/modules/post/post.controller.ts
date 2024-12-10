@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Param, Post } from '@nestjs/common';
 import { PostService } from './post.service';
 import { GetPostParams } from './dto/getList-post.dto';
 import { GrpcMethod } from '@nestjs/microservices';
@@ -77,5 +77,11 @@ export class PostController {
     const { id } = request;
     console.log('delete: ', id);
     return this.postService.remove(id);
+  }
+
+  @Post(':id/restore')
+  async restorePost(@Param('id') id: string): Promise<PostResponse> {
+    const restoredPost = await this.postService.restorePost(id);
+    return restoredPost;
   }
 }

@@ -33,6 +33,7 @@ import {
 import { RpcException } from '@nestjs/microservices';
 import { Follow } from 'entities/follow.entity';
 import { UserInfo } from 'entities/userInfo.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class PostService {
@@ -44,6 +45,7 @@ export class PostService {
     private readonly followRepository: Repository<Follow>,
     private readonly entityManager: EntityManager,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async getPosts(params: GetAllPostsRequest): Promise<PostsResponse> {
@@ -70,6 +72,12 @@ export class PostService {
       });
     }
 
+    if (params.userIdProfile) {
+      posts.andWhere('post.userId = :userIdProfile', {
+        userIdProfile: params.userIdProfile,
+      });
+    }
+
     const [result, total] = await posts.getManyAndCount();
 
     const data: PostInfoResponse[] = result.map((post) => ({
@@ -91,6 +99,7 @@ export class PostService {
       likeCount: post.likeList.length,
       commentCount: post.comment.length,
       isLiked: post.likeList.some((like) => like.userId === userId),
+      totalDonation: 0,
     }));
 
     const meta: PageMeta = {
@@ -197,6 +206,8 @@ export class PostService {
     const secondsDiff = Math.floor(timeDiff / 1000);
 
     switch (true) {
+      case secondsDiff < 300:
+        return 9999;
       case secondsDiff < 3600:
         return 15;
       case secondsDiff < 43200:
@@ -230,11 +241,19 @@ export class PostService {
   }
 
   async getRandomPosts(params: GetAllPostsRequest): Promise<PostsResponse> {
+    const userId = params.userId;
     const postsQuery = this.postsRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.userInfo', 'userInfo')
       .leftJoinAndSelect('post.likeList', 'like')
-      .leftJoinAndSelect('post.comment', 'comment');
+      .leftJoinAndSelect('post.comment', 'comment')
+      .leftJoin(
+        'like',
+        'userLike',
+        'userLike.postId = post.id AND userLike.userId = :userId',
+        { userId },
+      )
+      .leftJoinAndSelect('post.donation', 'donation'); // Thêm join với bảng donation
 
     if (params.content) {
       postsQuery.andWhere('post.content ILIKE :post', {
@@ -242,10 +261,8 @@ export class PostService {
       });
     }
 
-    // Lấy tất cả bài đăng
     const allPosts = await postsQuery.getMany();
 
-    // Tính toán điểm cho từng bài đăng
     const postsWithScores = await Promise.all(
       allPosts.map(async (post) => {
         const score = await this.calculatePostScore(post, this.currentUserId);
@@ -253,39 +270,43 @@ export class PostService {
       }),
     );
 
-    // Sắp xếp theo điểm
     postsWithScores.sort((a, b) => b.score - a.score);
 
-    // Áp dụng phân trang
     const total = postsWithScores.length; // Tổng số bài đăng
     const paginatedPosts = postsWithScores.slice(
       params.skip,
       params.skip + params.take,
     );
 
-    // Chuyển đổi sang định dạng dữ liệu cần trả về
-    const data: PostInfoResponse[] = paginatedPosts.map(({ post }) => ({
-      id: post.id,
-      content: post.content,
-      mediaPath: post.mediaPath,
-      createdAt: post.createdAt ? post.createdAt.toISOString() : null,
-      createdBy: post.createdBy || null,
-      updatedAt: post.updatedAt ? post.updatedAt.toISOString() : null,
-      updatedBy: post.updatedBy || null,
-      deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
-      deletedBy: post.deletedBy || null,
-      userId: post.userId,
-      userInfo: {
-        id: post.userInfo.id,
-        username: post.userInfo.username,
-        profilePicture: post.userInfo.profilePicture,
-      },
-      likeCount: post.likeList.length,
-      commentCount: post.comment.length,
-      isLiked: false,
-    }));
+    const data: PostInfoResponse[] = paginatedPosts.map(({ post }) => {
+      const totalDonation = post.donation.reduce(
+        (sum, donation) => sum + donation.amount,
+        0,
+      );
 
-    // Tạo meta cho phân trang
+      return {
+        id: post.id,
+        content: post.content,
+        mediaPath: post.mediaPath,
+        createdAt: post.createdAt ? post.createdAt.toISOString() : null,
+        createdBy: post.createdBy || null,
+        updatedAt: post.updatedAt ? post.updatedAt.toISOString() : null,
+        updatedBy: post.updatedBy || null,
+        deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
+        deletedBy: post.deletedBy || null,
+        userId: post.userId,
+        userInfo: {
+          id: post.userInfo.id,
+          username: post.userInfo.username,
+          profilePicture: post.userInfo.profilePicture,
+        },
+        likeCount: post.likeList.length,
+        commentCount: post.comment.length,
+        isLiked: post.likeList.some((like) => like.userId === userId),
+        totalDonation, // Tổng số donation
+      };
+    });
+
     const meta: PageMeta = {
       page: params.page,
       take: params.take,
@@ -345,6 +366,7 @@ export class PostService {
       likeCount: post.likeList.length,
       commentCount: post.comment.length,
       isLiked: post.likeList.some((like) => like.userId === userId),
+      totalDonation: 0,
     }));
 
     const meta: PageMeta = {
@@ -454,6 +476,7 @@ export class PostService {
       .leftJoinAndSelect('post.userInfo', 'userInfo')
       .leftJoinAndSelect('post.likeList', 'like')
       .leftJoinAndSelect('post.comment', 'comment')
+      .leftJoinAndSelect('post.donation', 'donation') // Thêm join với bảng donation
       .leftJoin(
         'like',
         'userLike',
@@ -466,6 +489,12 @@ export class PostService {
     if (!post) {
       throw new NotFoundException(`Post with ID ${request.id} not found`);
     }
+
+    // Tính tổng số donation
+    const totalDonation = post.donation.reduce(
+      (sum, donation) => sum + donation.amount,
+      0,
+    );
 
     return {
       id: post.id,
@@ -486,6 +515,7 @@ export class PostService {
       likeCount: post.likeList.length,
       commentCount: post.comment.length,
       isLiked: post.likeList.some((like) => like.userId === userId),
+      totalDonation, // Tổng số donation
     };
   }
 
@@ -642,6 +672,89 @@ export class PostService {
     });
 
     return { data: null, message: 'Post deletion successful' };
+  }
+
+  async restorePost(id: string): Promise<PostResponse> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    try {
+      await queryRunner.startTransaction();
+
+      // Khôi phục bài post
+      const post = await queryRunner.manager
+        .createQueryBuilder(Post, 'post')
+        .withDeleted()
+        .where('post.id = :id', { id })
+        .andWhere('post.deletedAt IS NOT NULL')
+        .getOne();
+      console.log('post deleted:', post);
+
+      if (!post) {
+        throw new RpcException('Post not found or already restored');
+      }
+
+      post.deletedAt = null;
+      post.deletedBy = null;
+      await queryRunner.manager.save(post);
+
+      // Khôi phục các bình luận và lượt thích bình luận
+      const comments = await queryRunner.manager
+        .createQueryBuilder(Comment, 'comment')
+        .withDeleted()
+        .where('comment.postId = :postId', { postId: id })
+        .andWhere('comment.deletedAt IS NOT NULL')
+        .getMany();
+
+      for (const comment of comments) {
+        comment.deletedAt = null;
+        comment.deletedBy = null;
+        await queryRunner.manager.save(comment);
+
+        const likeComments = await queryRunner.manager
+          .createQueryBuilder(LikeComment, 'likeComment')
+          .withDeleted()
+          .where('likeComment.commentId = :commentId', {
+            commentId: comment.id,
+          })
+          .andWhere('likeComment.deletedAt IS NOT NULL')
+          .getMany();
+
+        for (const likeComment of likeComments) {
+          likeComment.deletedAt = null;
+          likeComment.deletedBy = null;
+          await queryRunner.manager.save(likeComment);
+        }
+      }
+
+      // Khôi phục các lượt thích
+      const likes = await queryRunner.manager
+        .createQueryBuilder(Like, 'like')
+        .withDeleted()
+        .where('like.postId = :postId', { postId: id })
+        .andWhere('like.deletedAt IS NOT NULL')
+        .getMany();
+
+      for (const like of likes) {
+        like.deletedAt = null;
+        like.deletedBy = null;
+        await queryRunner.manager.save(like);
+      }
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Trả về thông tin bài post sau khi khôi phục
+      return;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Error in restore: ${error.message}`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new RpcException(error.message);
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   //CLOUDINARY
