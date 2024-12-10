@@ -23,11 +23,11 @@ describe('CommentController', () => {
             entityManager: {
               transaction: jest.fn(),
             },
-            getComments: jest.fn(), // Mock phương thức getComments
-            getCommentById: jest.fn(), // Mock phương thức getCommentById
-            create: jest.fn(), // Mock phương thức create
-            update: jest.fn(), // Mock phương thức update
-            remove: jest.fn(), // Mock phương thức remove
+            getComments: jest.fn(),
+            getCommentById: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
           },
         },
       ],
@@ -80,10 +80,9 @@ describe('CommentController', () => {
         userId: '456',
       };
 
-      // Chuyển đổi mediaPath từ string[] thành Buffer[]
       const modifiedRequest = {
         ...request,
-        mediaPath: request.mediaPath.map((url) => Buffer.from(url)), // Chuyển string thành Buffer
+        mediaPath: request.mediaPath.map((url) => Buffer.from(url)),
       };
 
       const response = {
@@ -116,7 +115,7 @@ describe('CommentController', () => {
 
       const modifiedRequest = {
         ...request,
-        mediaPath: request.mediaPath.map((url) => Buffer.from(url)), // Chuyển string thành Buffer
+        mediaPath: request.mediaPath.map((url) => Buffer.from(url)),
       };
 
       const response = {
@@ -137,7 +136,6 @@ describe('CommentController', () => {
 
       expect(result).toEqual(response);
 
-      // Điều chỉnh kiểm tra theo dữ liệu đã chuyển đổi
       expect(commentService.update).toHaveBeenCalledWith(modifiedRequest);
     });
   });

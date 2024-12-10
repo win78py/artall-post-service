@@ -74,10 +74,9 @@ describe('CommentController', () => {
         userId: '456',
       };
 
-      // Chuyển đổi mediaPath từ string[] thành Buffer[]
       const modifiedRequest = {
         ...request,
-        mediaPath: request.mediaPath.map((url) => Buffer.from(url)), // Chuyển string thành Buffer
+        mediaPath: request.mediaPath.map((url) => Buffer.from(url)),
       };
 
       const response = {
@@ -110,7 +109,7 @@ describe('CommentController', () => {
 
       const modifiedRequest = {
         ...request,
-        mediaPath: request.mediaPath.map((url) => Buffer.from(url)), // Chuyển string thành Buffer
+        mediaPath: request.mediaPath.map((url) => Buffer.from(url)),
       };
 
       const response = {

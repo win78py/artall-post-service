@@ -13,6 +13,7 @@ import { Comment } from './comment.entity';
 import { UserProfile } from './userProfile.entity';
 import { BlockList } from './blockList.entity';
 import { LikeComment } from './likeComment.entity';
+import { Donation } from './donation.entity';
 
 @Entity()
 export class UserInfo extends AbstractEntity {
@@ -79,6 +80,12 @@ export class UserInfo extends AbstractEntity {
     onUpdate: 'CASCADE',
   })
   comment: Comment[];
+
+  @OneToMany(() => Donation, (donation) => donation.user, {
+    cascade: true,
+    onUpdate: 'CASCADE',
+  })
+  donation: Donation[];
 
   constructor(userInfo: Partial<UserInfo>) {
     super();

@@ -8,6 +8,7 @@ import { LikeModule } from './modules/like/like.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { LikeCommentModule } from './modules/likeComment/likeComment.module';
 import { SeedingModule } from './modules/seeding/seeding.module';
+import { DonateModule } from './modules/donate/donate.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -17,6 +18,7 @@ import { SeedingModule } from './modules/seeding/seeding.module';
     LikeModule,
     CommentModule,
     LikeCommentModule,
+    DonateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,6 +15,8 @@ import { seedLikes } from './seeds/like.seed';
 import { Like } from 'entities/like.entity';
 import { LikeComment } from 'entities/likeComment.entity';
 import { seedLikeComments } from './seeds/likeComment.seed';
+import { Donation } from '../../entities/donation.entity';
+import { seedDonations } from './seeds/donation.seed';
 
 @Injectable()
 export class SeedingService {
@@ -37,6 +39,7 @@ export class SeedingService {
       const likeRepository = queryRunner.manager.getRepository(Like);
       const commentLikeRepository =
         queryRunner.manager.getRepository(LikeComment);
+      const donationRepository = queryRunner.manager.getRepository(Donation);
 
       // Xóa dữ liệu hiện có
       const usersInfo = await userInfoRepository.find();
@@ -47,7 +50,9 @@ export class SeedingService {
       const comment = await commentRepository.find();
       const like = await likeRepository.find();
       const commentLike = await commentLikeRepository.find();
+      const donation = await donationRepository.find();
 
+      await donationRepository.remove(donation);
       await commentLikeRepository.remove(commentLike);
       await likeRepository.remove(like);
       await commentRepository.remove(comment);
@@ -67,6 +72,11 @@ export class SeedingService {
       await seedLikeComments(
         commentLikeRepository,
         commentRepository,
+        userInfoRepository,
+      );
+      await seedDonations(
+        donationRepository,
+        postRepository,
         userInfoRepository,
       );
 
