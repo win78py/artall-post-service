@@ -11,8 +11,9 @@ Handles creating, updating, deleting posts and images.
 
 ## Tech Stack
 - NestJS, TypeScript
-- Gmail API (OAuth2)
-- Nodemailer
+- PostgreSQL (Prisma ORM)
+- Cloudinary for media
+- gRPC
 
 ### Overall Picture
 <img width="500" height="auto" alt="image" src="https://github.com/user-attachments/assets/0329f15d-fb65-42f7-81a6-b7f515ec314a" />
